@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Inspector Foody brand palette */
+    --background: 40 30% 97%;
+    --foreground: 155 25% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 155 25% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 155 25% 12%;
+
+    /* Deep green primary */
+    --primary: 152 47% 22%;
+    --primary-foreground: 40 30% 97%;
+
+    /* Warm yellow accent */
+    --secondary: 44 90% 53%;
+    --secondary-foreground: 155 30% 10%;
+
+    --muted: 40 20% 93%;
+    --muted-foreground: 155 10% 40%;
+
+    --accent: 44 90% 53%;
+    --accent-foreground: 155 30% 10%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 155 30% 10%;
+
+    --success: 142 60% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --border: 40 15% 87%;
+    --input: 40 15% 87%;
+    --ring: 152 47% 22%;
+
+    --chart-1: 152 47% 22%;
+    --chart-2: 44 90% 53%;
+    --chart-3: 0 72% 51%;
+    --chart-4: 38 92% 50%;
+    --chart-5: 142 60% 36%;
+
+    --radius: 0.625rem;
+  }
+
+  .dark {
+    --background: 155 25% 8%;
+    --foreground: 40 30% 95%;
+    --card: 155 25% 10%;
+    --card-foreground: 40 30% 95%;
+    --popover: 155 25% 10%;
+    --popover-foreground: 40 30% 95%;
+    --primary: 152 40% 45%;
+    --primary-foreground: 155 25% 8%;
+    --secondary: 44 80% 50%;
+    --secondary-foreground: 155 25% 8%;
+    --muted: 155 20% 16%;
+    --muted-foreground: 40 10% 65%;
+    --accent: 44 80% 50%;
+    --accent-foreground: 155 25% 8%;
+    --destructive: 0 62% 45%;
+    --destructive-foreground: 0 0% 100%;
+    --warning: 38 80% 50%;
+    --warning-foreground: 155 25% 8%;
+    --success: 142 50% 45%;
+    --success-foreground: 0 0% 100%;
+    --border: 155 15% 22%;
+    --input: 155 15% 22%;
+    --ring: 152 40% 45%;
+    --chart-1: 152 40% 45%;
+    --chart-2: 44 80% 50%;
+    --chart-3: 0 62% 45%;
+    --chart-4: 38 80% 50%;
+    --chart-5: 142 50% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 9999px;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+  }
+  .print-block {
+    display: block !important;
+  }
+}
