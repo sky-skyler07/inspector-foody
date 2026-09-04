@@ -34,7 +34,7 @@ const MOCK_PRODUCTS: Product[] = [
     manufacturer: 'NaturePure Foods Pvt Ltd',
     countryOfOrigin: 'India',
     category: 'Honey & Spreads',
-    imageUrl: PRODUCT_IMAGE('honey-jar'),
+    imageUrl: /products/honey.jpg,
     complianceScore: 92,
     complianceStatus: 'PASS',
     lastInspected: '2026-08-28T10:30:00Z',
