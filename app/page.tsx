@@ -67,52 +67,63 @@ export default function HomePage() {
       <Navbar />
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative overflow-hidden border-b border-border">
+<section className="relative overflow-hidden border-b border-border">
   {/* Hero background image */}
   <div
     className="absolute inset-0 bg-cover bg-center"
     style={{ backgroundImage: 'url("/products/hero-img.jpeg")' }}
   />
 
-  {/* Light overlay */}
-  <div className="absolute inset-0 bg-background/75" />
+  {/* Light overlay for readability */}
+  <div className="absolute inset-0 bg-background/55" />
 
-  {/* Extra subtle gradient */}
-  <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/65 to-background/90" />
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-            <div className="mx-auto max-w-3xl text-center">
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-6">
-                <ShieldCheck className="h-4 w-4" />
-                Packaged Commodity Compliance Inspection
-              </div>
-              <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl text-balance">
-                Scan. Inspect. Verify.
-              </h1>
-              <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto text-balance">
-                Inspector Foody helps you verify that packaged food products meet
-                mandatory labelling and compliance standards — from MRP and net quantity
-                to manufacturer details and required markings.
-              </p>
-              <div className="mt-8 max-w-2xl mx-auto">
-                <SearchBar autoFocus />
-              </div>
-              <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <Link href="/scan">
-                  <Button size="lg" className="w-full sm:w-auto gap-2">
-                    <ScanLine className="h-5 w-5" />
-                    Scan Product
-                  </Button>
-                </Link>
-                <Link href="/search">
-                  <Button size="lg" variant="outline" className="w-full sm:w-auto gap-2">
-                    <Package className="h-5 w-5" />
-                    Search Products
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+  {/* Subtle bottom gradient */}
+  <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-background/40 to-background/80" />
+
+  {/* Hero content */}
+  <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+    <div className="mx-auto max-w-3xl text-center">
+      <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-6">
+        <ShieldCheck className="h-4 w-4" />
+        Packaged Commodity Compliance Inspection
+      </div>
+
+      <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl text-balance">
+        Scan. Inspect. Verify.
+      </h1>
+
+      <p className="mt-6 text-lg text-muted-foreground max-w-2xl mx-auto text-balance">
+        Inspector Foody helps you verify that packaged food products meet
+        mandatory labelling and compliance standards — from MRP and net quantity
+        to manufacturer details and required markings.
+      </p>
+
+      <div className="mt-8 max-w-2xl mx-auto">
+        <SearchBar autoFocus />
+      </div>
+
+      <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <Link href="/scan">
+          <Button size="lg" className="w-full sm:w-auto gap-2">
+            <ScanLine className="h-5 w-5" />
+            Scan Product
+          </Button>
+        </Link>
+
+        <Link href="/search">
+          <Button
+            size="lg"
+            variant="outline"
+            className="w-full sm:w-auto gap-2"
+          >
+            <Package className="h-5 w-5" />
+            Search Products
+          </Button>
+        </Link>
+      </div>
+    </div>
+  </div>
+</section>
 
         {/* How It Works */}
         <section className="border-b border-border py-16 lg:py-20">
