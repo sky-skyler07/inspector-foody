@@ -68,7 +68,17 @@ export default function HomePage() {
       <main className="flex-1">
         {/* Hero */}
         <section className="relative overflow-hidden border-b border-border">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent" />
+  {/* Hero background image */}
+  <div
+    className="absolute inset-0 bg-cover bg-center"
+    style={{ backgroundImage: 'url("/products/hero-img.jpeg")' }}
+  />
+
+  {/* Light overlay */}
+  <div className="absolute inset-0 bg-background/75" />
+
+  {/* Extra subtle gradient */}
+  <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/65 to-background/90" />
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
             <div className="mx-auto max-w-3xl text-center">
               <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary mb-6">
