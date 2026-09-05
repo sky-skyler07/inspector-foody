@@ -1,8 +1,7 @@
 'use client';
-
 import Link from 'next/link';
-import { Logo } from './logo';
 import { ShieldCheck, ScanLine, FileText, Info } from 'lucide-react';
+import Image from 'next/image';
 
 const footerLinks = [
   {
@@ -35,7 +34,13 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           <div className="col-span-2 md:col-span-1">
-            <Logo />
+            <Image
+  src="/products/foody-logo/logo.jpeg"
+  alt="Inspector Foody Logo"
+  width={300}
+  height={150}
+  className="h-[150px] w-[300px] object-contain"
+/>
             <p className="mt-3 text-sm text-muted-foreground max-w-xs">
               AI-assisted packaged-commodity compliance inspection for food products.
             </p>
