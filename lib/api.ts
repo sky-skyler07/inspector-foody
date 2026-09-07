@@ -1,3 +1,5 @@
+import type { ComplianceStatus } from '@/lib/types';
+
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -198,29 +200,48 @@ function mapBackendInspection(data: any) {
     product: {
       id: data.product_id || 'unknown',
       name: fields.product_name || 'Unknown Product',
-
-      // Keep brand separate from manufacturer conceptually.
       brand: 'Detected from label',
-
       barcode: data.barcode || 'Not detected',
 
-      category: 'Food Product',
+      quantity: fields.quantity
+        ? `${fields.quantity} g`
+        : 'Not detected',
 
-      imageUrl: buildImageUrl(
-        data.image_path
-      ),
+      mrp: fields.mrp
+        ? `₹${fields.mrp}`
+        : 'Not detected',
+
+      manufacturer:
+        fields.manufacturer || 'Not detected',
+
+      countryOfOrigin:
+        fields.country_of_origin || 'Not detected',
+
+      category: 'Food Product',
+      imageUrl: buildImageUrl(data.image_path),
+
+      complianceScore:
+        typeof data.score === 'number'
+          ? data.score
+          : 0,
+
+      complianceStatus:
+        status as ComplianceStatus,
+
+      lastInspected:
+        data.created_at ||
+        new Date().toISOString(),
     },
 
-    imageUrl: buildImageUrl(
-      data.image_path
-    ),
+    imageUrl: buildImageUrl(data.image_path),
 
     complianceScore:
       typeof data.score === 'number'
         ? data.score
         : 0,
 
-    complianceStatus: status,
+    complianceStatus:
+      status as ComplianceStatus,
 
     checks: buildChecks(data),
 
