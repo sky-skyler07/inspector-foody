@@ -68,11 +68,16 @@ export default function ComplianceResultPage({
     toast.success('Violation marked as reviewed');
   };
 
-  const handleGenerateReport = async () => {
-    if (!inspection) return;
-    toast.success('Report generated successfully');
-    router.push(`/inspections/${inspection.id}/report`);
-  };
+  const handleGenerateReport = () => {
+  if (!inspection?.id) {
+    toast.error('Inspection ID is missing');
+    return;
+  }
+
+  router.push(
+    `/inspections/${encodeURIComponent(inspection.id)}/report`
+  );
+};
 
   if (loading)
     return (
@@ -177,17 +182,26 @@ export default function ComplianceResultPage({
 
         {/* Action buttons */}
         <div className="flex flex-col sm:flex-row gap-3 mb-8">
-          <Button size="lg" className="flex-1 gap-2" onClick={handleGenerateReport}>
-            <FileText className="h-5 w-5" />
-            Generate Report
-          </Button>
-          <Link href="/scan" className="flex-1">
-            <Button size="lg" variant="outline" className="w-full gap-2">
-              <Plus className="h-5 w-5" />
-              Start New Inspection
-            </Button>
-          </Link>
-        </div>
+  <Button
+    size="lg"
+    className="flex-1 gap-2"
+    onClick={handleGenerateReport}
+  >
+    <FileText className="h-5 w-5" />
+    Generate Report
+  </Button>
+
+  <Link href="/scan" className="flex-1">
+    <Button
+      variant="outline"
+      size="lg"
+      className="w-full gap-2"
+    >
+      <Plus className="h-5 w-5" />
+      Start New Inspection
+    </Button>
+  </Link>
+</div>
 
         {/* Tabs: Checks / Violations / Evidence */}
         <Tabs defaultValue="checks">

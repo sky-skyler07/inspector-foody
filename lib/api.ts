@@ -16,7 +16,11 @@ export interface ScanResponse {
     manufacturer: string | null;
     country_of_origin: string | null;
   };
-  issues: string[];
+  issues: {
+  field: string;
+  message: string;
+  severity: string;
+}[];
 }
 
 async function request<T>(
@@ -143,53 +147,96 @@ function buildChecks(data: any) {
 function buildViolations(data: any) {
   const issues = data.issues || [];
 
-  return issues.map((issue: string, index: number) => ({
-    id: `violation-${index + 1}`,
-    title: issue,
-    description: issue,
-    severity: 'high',
-    confidence: data.confidence || 0,
-    explanation: issue,
-    reviewed: false,
-    ruleReference: 'Food label compliance requirement',
-    evidence: [],
-  }));
+  return issues.map((issue: any, index: number) => {
+    const message =
+      typeof issue === 'string'
+        ? issue
+        : issue.message || 'Compliance issue detected';
+
+    const field =
+      typeof issue === 'string'
+        ? 'Compliance Requirement'
+        : issue.field || 'Compliance Requirement';
+
+    const severity =
+      typeof issue === 'string'
+        ? 'high'
+        : issue.severity || 'medium';
+
+    return {
+      id: `violation-${index + 1}`,
+      title: field,
+      description: message,
+      severity,
+      confidence: data.confidence || 0,
+      explanation: message,
+      reviewed: false,
+      ruleReference:
+        'Food label compliance requirement',
+      evidence: [],
+    };
+  });
 }
 
 function mapBackendInspection(data: any) {
   const fields = data.fields || {};
 
   const status =
-  data.status === 'PASS'
-    ? 'PASS'
-    : data.status === 'WARNING'
-      ? 'WARNING'
-      : 'FAIL';
+    data.status === 'PASS'
+      ? 'PASS'
+      : data.status === 'WARNING'
+        ? 'WARNING'
+        : 'FAIL';
+
+  const inspectionId =
+    data.inspection_id || data.id;
 
   return {
-    id: data.inspection_id,
+    id: inspectionId,
     productId: data.product_id || 'unknown',
 
     product: {
       id: data.product_id || 'unknown',
       name: fields.product_name || 'Unknown Product',
-      brand: fields.manufacturer || 'Unknown Manufacturer',
-      barcode: 'Not detected',
+
+      // Keep brand separate from manufacturer conceptually.
+      brand: 'Detected from label',
+
+      barcode: data.barcode || 'Not detected',
+
       category: 'Food Product',
-      imageUrl: buildImageUrl(data.image_path),
+
+      imageUrl: buildImageUrl(
+        data.image_path
+      ),
     },
 
-    imageUrl: buildImageUrl(data.image_path),
+    imageUrl: buildImageUrl(
+      data.image_path
+    ),
 
-    complianceScore: data.score || 0,
+    complianceScore:
+      typeof data.score === 'number'
+        ? data.score
+        : 0,
+
     complianceStatus: status,
 
     checks: buildChecks(data),
+
     violations: buildViolations(data),
 
-    inspector: data.inspector || 'Inspector Aanya',
-    date: data.created_at || new Date().toISOString(),
-    reviewStatus: data.review_status || 'pending',
+    inspector:
+      data.inspector ||
+      'Inspector Aanya',
+
+    date:
+      data.created_at ||
+      new Date().toISOString(),
+
+    reviewStatus:
+      data.review_status ||
+      'pending',
   };
 }
 
@@ -202,5 +249,124 @@ export async function getInspection(id: string) {
 }
 
 export async function getInspections() {
-  return request<any[]>('/api/inspections');
+  const data = await request<any[]>('/api/inspections');
+  return data.map(mapBackendInspection);
+}
+
+export async function getDashboardStats() {
+  const inspections = await getInspections();
+
+  const totalInspections = inspections.length;
+
+  const compliancePercentage =
+    totalInspections > 0
+      ? Math.round(
+          inspections.reduce(
+            (sum, inspection) =>
+              sum + inspection.complianceScore,
+            0
+          ) / totalInspections
+        )
+      : 0;
+
+  const violationsDetected = inspections.reduce(
+    (sum, inspection) =>
+      sum + inspection.violations.length,
+    0
+  );
+
+  const today = new Date();
+
+  const todaysInspections = inspections.filter(
+    (inspection) => {
+      const date = new Date(inspection.date);
+
+      return (
+        date.getFullYear() === today.getFullYear() &&
+        date.getMonth() === today.getMonth() &&
+        date.getDate() === today.getDate()
+      );
+    }
+  ).length;
+
+  const groupedByDate: Record<
+    string,
+    {
+      total: number;
+      score: number;
+    }
+  > = {};
+
+  inspections.forEach((inspection) => {
+    const date = new Date(inspection.date);
+
+    const key = date.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+    });
+
+    if (!groupedByDate[key]) {
+      groupedByDate[key] = {
+        total: 0,
+        score: 0,
+      };
+    }
+
+    groupedByDate[key].total += 1;
+    groupedByDate[key].score +=
+      inspection.complianceScore;
+  });
+
+  const trend = Object.entries(groupedByDate)
+    .map(([date, value]) => ({
+      date,
+      compliance: Math.round(
+        value.score / value.total
+      ),
+      inspections: value.total,
+    }))
+    .reverse()
+    .slice(-7);
+
+  const violationMap: Record<string, number> = {};
+
+  inspections.forEach((inspection) => {
+    inspection.checks
+      .filter(
+        (check) => check.status !== 'passed'
+      )
+      .forEach((check) => {
+        violationMap[check.category] =
+          (violationMap[check.category] || 0) + 1;
+      });
+  });
+
+  const violationDistribution =
+    Object.entries(violationMap)
+      .map(([category, count]) => ({
+        category,
+        count,
+      }))
+      .sort(
+        (a, b) => b.count - a.count
+      )
+      .slice(0, 6);
+
+  const recentInspections = [...inspections]
+    .sort(
+      (a, b) =>
+        new Date(b.date).getTime() -
+        new Date(a.date).getTime()
+    )
+    .slice(0, 5);
+
+  return {
+    totalInspections,
+    compliancePercentage,
+    violationsDetected,
+    todaysInspections,
+    trend,
+    violationDistribution,
+    recentInspections,
+  };
 }

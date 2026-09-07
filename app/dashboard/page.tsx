@@ -28,7 +28,7 @@ import {
   Bar,
   Cell,
 } from 'recharts';
-import { getDashboardStats } from '@/lib/mock-api';
+import { getDashboardStats } from '@/lib/api';
 import type { DashboardStats } from '@/lib/types';
 
 export default function DashboardPage() {
@@ -71,27 +71,24 @@ export default function DashboardPage() {
 
         {/* Stat cards */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+         <StatCard
+  label="Total Inspections"
+  value={stats.totalInspections}
+  icon={ClipboardCheck}
+  accent="primary"
+/>
+         <StatCard
+  label="Compliance Rate"
+  value={`${stats.compliancePercentage}%`}
+  icon={ShieldCheck}
+  accent="success"
+/>
           <StatCard
-            label="Total Inspections"
-            value={stats.totalInspections}
-            icon={ClipboardCheck}
-            accent="primary"
-            trend={{ value: '+12%', direction: 'up' }}
-          />
-          <StatCard
-            label="Compliance Rate"
-            value={`${stats.compliancePercentage}%`}
-            icon={ShieldCheck}
-            accent="success"
-            trend={{ value: '+3%', direction: 'up' }}
-          />
-          <StatCard
-            label="Violations Detected"
-            value={stats.violationsDetected}
-            icon={AlertTriangle}
-            accent="destructive"
-            trend={{ value: '-8%', direction: 'down' }}
-          />
+  label="Violations Detected"
+  value={stats.violationsDetected}
+  icon={AlertTriangle}
+  accent="destructive"
+/>
           <StatCard
             label="Today's Inspections"
             value={stats.todaysInspections}
