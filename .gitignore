@@ -34,3 +34,24 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Python virtual environment
+backend/.venv/
+
+# Python cache
+backend/__pycache__/
+backend/**/__pycache__/
+
+# SQLite database
+backend/*.db
+
+# Uploaded files
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Python bytecode
+*.pyc
+
+# Environment files
+.env
+.env.local
+.env.*.local
