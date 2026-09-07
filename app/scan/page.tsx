@@ -17,7 +17,8 @@ import {
   AlertCircle,
   Zap,
 } from 'lucide-react';
-import { uploadInspection, getProduct } from '@/lib/mock-api';
+import { uploadInspection } from '@/lib/api';
+import { getProduct } from '@/lib/mock-api';
 import type { Product } from '@/lib/types';
 
 function ScanPageContent() {
@@ -25,6 +26,7 @@ function ScanPageContent() {
   const searchParams = useSearchParams();
   const productId = searchParams.get('productId');
   const [imageData, setImageData] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [product, setProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -40,15 +42,20 @@ function ScanPageContent() {
     }
   }, [productId]);
 
-  const handleFileSelected = (file: File, dataUrl: string) => {
-    setImageData(dataUrl);
-    setFileName(file.name);
-  };
+  const handleFileSelected = (
+  file: File,
+  dataUrl: string
+) => {
+  setImageFile(file);
+  setImageData(dataUrl);
+  setFileName(file.name);
+};
 
   const handleRemove = () => {
-    setImageData(null);
-    setFileName('');
-  };
+  setImageData(null);
+  setImageFile(null);
+  setFileName('');
+};
 
   const startCamera = async () => {
     setCameraError(null);
@@ -75,39 +82,72 @@ function ScanPageContent() {
   };
 
   const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    ctx.drawImage(video, 0, 0);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+  if (!videoRef.current || !canvasRef.current) return;
+
+  const video = videoRef.current;
+  const canvas = canvasRef.current;
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  ctx.drawImage(video, 0, 0);
+
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+
+    const file = new File(
+      [blob],
+      'camera-capture.jpg',
+      { type: 'image/jpeg' }
+    );
+
+    const dataUrl = canvas.toDataURL(
+      'image/jpeg',
+      0.9
+    );
+
+    setImageFile(file);
     setImageData(dataUrl);
     setFileName('camera-capture.jpg');
     stopCamera();
-  };
+  }, 'image/jpeg', 0.9);
+};
 
   useEffect(() => {
     return () => stopCamera();
   }, []);
 
   const handleAnalyze = async () => {
-    if (!imageData) return;
-    setSubmitting(true);
-    try {
-      const { inspectionId } = await uploadInspection(
-        product?.id ?? 'p1',
-        imageData
-      );
-      toast.success('Image uploaded. Starting analysis…');
-      router.push(`/analyzing/${inspectionId}?img=${encodeURIComponent(imageData)}`);
-    } catch {
-      toast.error('Failed to upload image. Please try again.');
-      setSubmitting(false);
-    }
-  };
+  if (!imageFile) {
+    toast.error('Please select an image first.');
+    return;
+  }
+
+  setSubmitting(true);
+
+  try {
+    const result = await uploadInspection(imageFile);
+
+    console.log('REAL BACKEND RESULT:', result);
+
+    toast.success('Inspection completed successfully.');
+
+    router.push(`/inspections/${result.inspection_id}`);
+  } catch (error) {
+    console.error('Inspection error:', error);
+
+    toast.error(
+      error instanceof Error
+        ? error.message
+        : 'Failed to analyze image.'
+    );
+
+    setSubmitting(false);
+  }
+};
 
   return (
     <AppShell>
@@ -251,7 +291,7 @@ function ScanPageContent() {
                 disabled={submitting}
               >
                 <Zap className="h-5 w-5" />
-                {submitting ? 'Uploading…' : 'Analyze Product'}
+                {submitting ? 'Analyzing…' : 'Analyze Product'}
               </Button>
               <Button variant="outline" size="lg" onClick={handleRemove}>
                 Replace Image

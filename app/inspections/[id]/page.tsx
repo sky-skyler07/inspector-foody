@@ -21,7 +21,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getInspection, markViolationReviewed, generateReport } from '@/lib/mock-api';
+import { getInspection } from '@/lib/api';
+import { markViolationReviewed, generateReport } from '@/lib/mock-api';
 import type { Inspection, Violation } from '@/lib/types';
 import {
   CheckCircle2,

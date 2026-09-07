@@ -46,34 +46,59 @@ export function CheckItem({ check, onClick, expanded }: CheckItemProps) {
       tabIndex={onClick ? 0 : undefined}
       onKeyDown={onClick ? (e) => e.key === 'Enter' && onClick() : undefined}
     >
-      <div className={cn('flex h-9 w-9 items-center justify-center rounded-lg shrink-0', c.bg)}>
+      <div
+        className={cn(
+          'flex h-9 w-9 items-center justify-center rounded-lg shrink-0',
+          c.bg
+        )}
+      >
         <c.Icon className={cn('h-5 w-5', c.color)} />
       </div>
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <p className="text-sm font-semibold text-foreground">{check.label}</p>
-            <p className="text-xs text-muted-foreground">{check.category}</p>
+            <p className="text-sm font-semibold text-foreground">
+              {check.label}
+            </p>
+
+            <p className="text-xs text-muted-foreground">
+              {check.category}
+            </p>
           </div>
-          <span className={cn('text-xs font-bold tabular-nums', c.color)}>
-            {check.confidence}%
+
+          <span
+            className={cn(
+              'text-xs font-medium text-right max-w-[280px]',
+              c.color
+            )}
+          >
+            {check.actual || 'Not detected'}
           </span>
         </div>
+
         {expanded && (
           <div className="mt-2 space-y-1.5 text-xs">
-            <p className="text-muted-foreground">{check.message}</p>
+            <p className="text-muted-foreground">
+              {check.message}
+            </p>
+
             <div className="flex items-center gap-1.5 text-muted-foreground">
               <Info className="h-3 w-3" />
               <span>Rule: {check.ruleReference}</span>
             </div>
+
             {check.expected && (
               <p className="text-muted-foreground">
-                <span className="font-medium">Expected:</span> {check.expected}
+                <span className="font-medium">Expected:</span>{' '}
+                {check.expected}
               </p>
             )}
+
             {check.actual && (
               <p className="text-muted-foreground">
-                <span className="font-medium">Detected:</span> {check.actual}
+                <span className="font-medium">Detected:</span>{' '}
+                {check.actual}
               </p>
             )}
           </div>
