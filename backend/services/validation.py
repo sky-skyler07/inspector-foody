@@ -2,10 +2,19 @@ import re
 from datetime import datetime
 
 
-def find_value(text: str, patterns: list[str]) -> str | None:
-    """
-    Try several regex patterns and return the first match.
-    """
+def clean_value(value: str | None) -> str | None:
+    if not value:
+        return None
+
+    value = re.sub(r"\s+", " ", value).strip(" :-;,.")
+
+    if len(value) < 2:
+        return None
+
+    return value
+
+
+def find_inline(text: str, patterns: list[str]) -> str | None:
     for pattern in patterns:
         match = re.search(
             pattern,
@@ -14,141 +23,300 @@ def find_value(text: str, patterns: list[str]) -> str | None:
         )
 
         if match:
-            value = match.group(1).strip()
+            return clean_value(match.group(1))
 
-            # Clean excessive whitespace
-            value = re.sub(r"\s+", " ", value)
+    return None
 
-            return value
+
+def find_after_label(text: str, labels: list[str]) -> str | None:
+    lines = [
+        re.sub(r"\s+", " ", line).strip()
+        for line in text.splitlines()
+        if line.strip()
+    ]
+
+    for i, line in enumerate(lines):
+        lower = line.lower()
+
+        for label in labels:
+            if label in lower:
+                # Value may be on the same line after the label
+                remainder = re.sub(
+                    rf"^\s*{re.escape(label)}\s*[:;\-]?\s*",
+                    "",
+                    line,
+                    flags=re.IGNORECASE,
+                ).strip()
+
+                if remainder and remainder.lower() != label.lower():
+                    return clean_value(remainder)
+
+                # Or the value may be on the following line
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1]
+
+                    if next_line and not any(
+                        x in next_line.lower()
+                        for x in [
+                            "net qty",
+                            "lot no",
+                            "pkg date",
+                            "use by",
+                            "mrp",
+                            "nutrition",
+                            "store",
+                            "manufactured",
+                            "manufacturing",
+                        ]
+                    ):
+                        return clean_value(next_line)
+
+    return None
+
+
+def extract_product_name(text: str) -> str | None:
+    # Strong explicit label
+    value = find_inline(
+        text,
+        [
+            r"(?:product\s*name|product)\s*[:\-]\s*([^\n]+)",
+        ],
+    )
+
+    if value:
+        return value
+
+    # Common food-brand OCR: line containing "Soy", "Chunks", etc.
+    lines = [
+        re.sub(r"\s+", " ", line).strip()
+        for line in text.splitlines()
+        if line.strip()
+    ]
+
+    for line in lines:
+        if re.search(
+            r"\b(?:soy|soya|biscuit|biscuits|namkeen|noodles|chips|masala|atta|flour|rice|dal|spice|honey|juice|drink|chocolate)\b",
+            line,
+            re.IGNORECASE,
+        ):
+            if len(line) <= 80:
+                return clean_value(line)
 
     return None
 
 
 def extract_fields(text: str) -> dict:
-    """
-    Extract useful food-label fields from OCR text.
+    text = text.replace("\r", "\n")
 
-    The patterns intentionally tolerate common OCR mistakes
-    such as MIRP instead of MRP.
-    """
+    product_name = extract_product_name(text)
 
-    product_name = find_value(
+    batch_no = find_inline(
         text,
         [
-            r"(?:product\s*(?:name)?|name)\s*[:\-]\s*([^\n]+)",
-            r"\b(?:guru)\s*\n\s*([A-Z][A-Za-z ]+(?:\s+[A-Za-z]+)?)",
+            r"(?:batch|lot)\s*(?:no|number)?\s*[:;\-]?\s*([A-Z0-9][A-Z0-9/\-]*)",
         ],
     )
 
-    # If the OCR doesn't contain "Product:" we try to recognize
-    # the product from the sample label.
-    if not product_name:
-        lines = [
-            re.sub(r"\s+", " ", line).strip()
-            for line in text.splitlines()
-            if line.strip()
-        ]
+    if not batch_no:
+        batch_no = find_after_label(
+            text,
+            [
+                "lot no",
+                "lot number",
+                "batch no",
+                "batch number",
+            ],
+        )
 
-        for line in lines:
+        if batch_no:
+            # Avoid accidentally returning another field label
             if re.fullmatch(
-                r"(?:Aloo\s+Bhujiya|Bhujiya|Namkeen|Biscuits?)",
-                line,
+                r"(?:pkg|package|date|mrp|usp|net\s*qty|use\s*by).*",
+                batch_no,
                 re.IGNORECASE,
             ):
-                product_name = line
-                break
+                batch_no = None
 
-    batch_no = find_value(
+    manufacturing_date = find_inline(
         text,
         [
-            r"(?:batch|lot)\s*(?:no|number)?\s*[:\-]?\s*([A-Z0-9/\-]+)",
-        ],
-    )
-
-    manufacturing_date = find_value(
-        text,
-        [
-            r"(?:mfg|manufactur(?:ed|ing))\s*(?:date)?\s*[:\-]?\s*"
+            r"(?:mfg|mfd|manufactur(?:ing|ed)?)\s*(?:date)?\s*[:;\-]?\s*"
             r"([0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{2,4})",
+            r"(?:mfg|mfd|manufactur(?:ing|ed)?)\s*(?:date)?\s*[:;\-]?\s*"
+            r"([0-9]{1,2}[\/\-][0-9]{2,4})",
         ],
     )
 
-    expiry_date = find_value(
+    if not manufacturing_date:
+        manufacturing_date = find_after_label(
+            text,
+            [
+                "mfg",
+                "mfd",
+                "mfg date",
+                "pkg date",
+                "package date",
+                "manufacturing date",
+            ],
+        )
+
+        if manufacturing_date:
+            match = re.search(
+                r"\b([0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{2,4})\b",
+                manufacturing_date,
+            )
+            manufacturing_date = (
+                match.group(1) if match else None
+            )
+
+    expiry_date = find_inline(
         text,
         [
-            # Standard expiry/best-before date
             r"(?:exp|expiry|use\s*by|best\s*before)\s*(?:date)?"
-            r"\s*[:\-]?\s*"
+            r"\s*[:;\-]?\s*"
             r"([0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{2,4})",
-
-            # Example: "Best Before 90 Days from MFG Date"
-            r"(best\s*before\s+\d+\s+days?\s+from\s+mfg\s+date)",
+            r"(?:exp|expiry|use\s*by|best\s*before)\s*(?:date)?"
+            r"\s*[:;\-]?\s*"
+            r"([0-9]{1,2}[\/\-][0-9]{2,4})",
         ],
     )
 
-    mrp = find_value(
+    if not expiry_date:
+        expiry_date = find_after_label(
+            text,
+            [
+                "use by date",
+                "use by",
+                "expiry date",
+                "expiry",
+                "best before",
+            ],
+        )
+
+        if expiry_date:
+            match = re.search(
+                r"\b([0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{2,4})\b",
+                expiry_date,
+            )
+            expiry_date = (
+                match.group(1) if match else None
+            )
+
+    mrp = find_inline(
         text,
         [
-            # OCR commonly reads MRP as MIRP
-            r"(?:mrp|mirp|m\.r\.p\.?)\s*[:\-]?\s*"
+            r"(?:mrp|mirp|m\.r\.p\.?|maximum\s*retail\s*price)"
+            r"\s*[:;\-]?\s*"
             r"(?:₹|rs\.?|inr)?\s*"
             r"([0-9]+(?:\.[0-9]{1,2})?)",
-
-            r"maximum\s+retail\s+price\s*[:\-]?\s*"
-            r"(?:₹|rs\.?|inr)?\s*"
-            r"([0-9]+(?:\.[0-9]{1,2})?)",
         ],
     )
 
-    quantity = find_value(
+    if not mrp:
+        mrp = find_after_label(
+            text,
+            [
+                "mrp",
+                "m.r.p",
+                "mirp",
+                "maximum retail price",
+            ],
+        )
+
+        if mrp:
+            match = re.search(
+                r"(?:₹|rs\.?|inr)?\s*([0-9]+(?:\.[0-9]{1,2})?)",
+                mrp,
+                re.IGNORECASE,
+            )
+            mrp = match.group(1) if match else None
+
+    quantity = find_inline(
         text,
         [
-            r"(?:net\s*(?:weight|wt)|net\s*quantity|quantity)"
-            r"\s*[:\-]?\s*"
-            r"([0-9]+(?:\.[0-9]+)?)\s*(g|kg|ml|l|pcs|pieces)\b",
+            r"(?:net\s*(?:qty|quantity|weight|wt))"
+            r"\s*[:;\-]?\s*"
+            r"([0-9]+(?:\.[0-9]+)?)\s*"
+            r"(g|kg|ml|l|pcs|pieces)\b",
         ],
     )
 
-    manufacturer = find_value(
+    if not quantity:
+        quantity = find_after_label(
+            text,
+            [
+                "net qty",
+                "net quantity",
+                "net weight",
+                "net wt",
+            ],
+        )
+
+        if quantity:
+            match = re.search(
+                r"([0-9]+(?:\.[0-9]+)?)\s*"
+                r"(g|kg|ml|l|pcs|pieces)\b",
+                quantity,
+                re.IGNORECASE,
+            )
+            quantity = (
+                f"{match.group(1)} {match.group(2)}"
+                if match
+                else None
+            )
+
+    manufacturer = find_inline(
         text,
         [
+            r"(?:manufactured\s*(?:and\s*)?marketed\s*by)"
+            r"\s*[:;\-]?\s*([^\n]+)",
             r"(?:manufactured\s*by|manufacturer|packer)"
-            r"\s*[:\-]\s*([^\n]+)",
-
-            # Useful fallback for the sample OCR:
-            # "Barcode Label / Guru / Aloo Bhujiya"
-            r"Barcode\s+Label\s*\n\s*([A-Za-z][A-Za-z ]+)\s*\n"
-            r"\s*Aloo\s+Bhujiya",
+            r"\s*[:;\-]?\s*([^\n]+)",
         ],
     )
 
-    country_of_origin = find_value(
+    if not manufacturer:
+        manufacturer = find_after_label(
+            text,
+            [
+                "manufactured & marketed by",
+                "manufactured and marketed by",
+                "manufactured by",
+                "manufacturer",
+                "packer",
+            ],
+        )
+
+    country_of_origin = find_inline(
         text,
         [
             r"(?:country\s*of\s*origin|made\s*in)"
-            r"\s*[:\-]\s*([^\n]+)",
+            r"\s*[:;\-]?\s*([^\n]+)",
         ],
     )
 
+    if not country_of_origin:
+        country_of_origin = find_after_label(
+            text,
+            [
+                "country of origin",
+                "made in",
+            ],
+        )
+
     return {
-        "product_name": product_name,
-        "batch_no": batch_no,
-        "manufacturing_date": manufacturing_date,
-        "expiry_date": expiry_date,
-        "mrp": mrp,
-        "quantity": quantity,
-        "manufacturer": manufacturer,
-        "country_of_origin": country_of_origin,
+        "product_name": clean_value(product_name),
+        "batch_no": clean_value(batch_no),
+        "manufacturing_date": clean_value(manufacturing_date),
+        "expiry_date": clean_value(expiry_date),
+        "mrp": clean_value(mrp),
+        "quantity": clean_value(quantity),
+        "manufacturer": clean_value(manufacturer),
+        "country_of_origin": clean_value(country_of_origin),
     }
 
 
-def validate(fields: dict) -> tuple[str, int, list[str]]:
-    """
-    Basic prototype compliance validation.
-
-    This is intentionally simple for the hackathon demo.
-    """
-
+def validate(fields: dict) -> tuple[str, int, list[dict]]:
     required = [
         "batch_no",
         "expiry_date",
@@ -157,33 +325,42 @@ def validate(fields: dict) -> tuple[str, int, list[str]]:
         "manufacturer",
     ]
 
-    missing = [
-        name
-        for name in required
-        if not fields.get(name)
-    ]
+    issues = []
 
-    issues = [
-        f"Missing {name.replace('_', ' ')}"
-        for name in missing
-    ]
+    for name in required:
+        if not fields.get(name):
+            issues.append(
+                {
+                    "field": name.replace("_", " ").title(),
+                    "message": f"Missing {name.replace('_', ' ')}",
+                    "severity": "high",
+                }
+            )
 
-    # Check expiry if we have an actual date.
     expiry = fields.get("expiry_date")
 
     if expiry:
         raw = expiry.replace("-", "/")
 
-        for fmt in ("%d/%m/%Y", "%d/%m/%y"):
+        for fmt in (
+            "%d/%m/%Y",
+            "%d/%m/%y",
+            "%m/%Y",
+            "%m/%y",
+        ):
             try:
-                expiry_date = datetime.strptime(
+                expiry_value = datetime.strptime(
                     raw,
                     fmt,
                 ).date()
 
-                if expiry_date < datetime.now().date():
+                if expiry_value < datetime.now().date():
                     issues.append(
-                        "Product expiry date has passed"
+                        {
+                            "field": "Expiry",
+                            "message": "Product expiry date has passed",
+                            "severity": "high",
+                        }
                     )
 
                 break
@@ -191,10 +368,11 @@ def validate(fields: dict) -> tuple[str, int, list[str]]:
             except ValueError:
                 continue
 
-    # Prototype scoring
+    issue_count = len(issues)
+
     score = max(
         0,
-        100 - len(issues) * 15,
+        100 - issue_count * 15,
     )
 
     if score >= 75:
