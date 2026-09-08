@@ -1,4 +1,4 @@
-import type { ComplianceStatus } from '@/lib/types';
+import type { ComplianceStatus, CheckStatus } from '@/lib/types';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -71,75 +71,119 @@ function buildImageUrl(imagePath: string | null) {
 
 function buildChecks(data: any) {
   const fields = data.fields || {};
+  const confidence = data.confidence || 0;
 
   return [
     {
       id: 'batch',
+      category: 'Batch / Lot Number',
       label: 'Batch / Lot Number',
       ruleReference: 'Mandatory batch identification',
-      status: fields.batch_no ? 'passed' : 'failed',
+      status: (fields.batch_no ? 'passed' : 'failed') as CheckStatus,
       actual: fields.batch_no || 'Not detected',
       details: fields.batch_no
         ? `Batch number detected: ${fields.batch_no}`
         : 'Batch number was not detected.',
+      confidence,
+      message: fields.batch_no
+        ? `Batch number detected: ${fields.batch_no}`
+        : 'Batch number was not detected.',
     },
+
     {
       id: 'manufacturing-date',
+      category: 'Manufacturing Date',
       label: 'Manufacturing Date',
       ruleReference: 'Mandatory manufacturing date',
-      status: fields.manufacturing_date ? 'passed' : 'warning',
+      status: (fields.manufacturing_date ? 'passed' : 'warning') as CheckStatus,
       actual: fields.manufacturing_date || 'Not detected',
       details: fields.manufacturing_date
         ? `Manufacturing date detected: ${fields.manufacturing_date}`
         : 'Manufacturing date was not detected.',
+      confidence,
+      message: fields.manufacturing_date
+        ? `Manufacturing date detected: ${fields.manufacturing_date}`
+        : 'Manufacturing date was not detected.',
     },
+
     {
       id: 'expiry',
+      category: 'Expiry / Best Before',
       label: 'Expiry / Best Before',
       ruleReference: 'Mandatory shelf-life declaration',
-      status: fields.expiry_date ? 'passed' : 'failed',
+      status: (fields.expiry_date ? 'passed' : 'failed') as CheckStatus,
       actual: fields.expiry_date || 'Not detected',
       details: fields.expiry_date
         ? `Expiry / best-before information detected: ${fields.expiry_date}`
         : 'Expiry / best-before information was not detected.',
+      confidence,
+      message: fields.expiry_date
+        ? `Expiry / best-before information detected: ${fields.expiry_date}`
+        : 'Expiry / best-before information was not detected.',
     },
+
     {
       id: 'mrp',
+      category: 'Maximum Retail Price',
       label: 'Maximum Retail Price',
       ruleReference: 'Mandatory MRP declaration',
-      status: fields.mrp ? 'passed' : 'failed',
+      status: (fields.mrp ? 'passed' : 'failed') as CheckStatus,
       actual: fields.mrp ? `₹${fields.mrp}` : 'Not detected',
       details: fields.mrp
         ? `MRP detected: ₹${fields.mrp}`
         : 'MRP was not detected.',
+      confidence,
+      message: fields.mrp
+        ? `MRP detected: ₹${fields.mrp}`
+        : 'MRP was not detected.',
     },
+
     {
       id: 'quantity',
+      category: 'Net Quantity',
       label: 'Net Quantity',
       ruleReference: 'Mandatory quantity declaration',
-      status: fields.quantity ? 'passed' : 'failed',
-      actual: fields.quantity ? `${fields.quantity} g` : 'Not detected',
+      status: (fields.quantity ? 'passed' : 'failed') as CheckStatus,
+      actual: fields.quantity
+        ? `${fields.quantity} g`
+        : 'Not detected',
       details: fields.quantity
-        ? `Net quantity detected: ${fields.quantity}`
+        ? `Net quantity detected: ${fields.quantity} g`
+        : 'Net quantity was not detected.',
+      confidence,
+      message: fields.quantity
+        ? `Net quantity detected: ${fields.quantity} g`
         : 'Net quantity was not detected.',
     },
+
     {
       id: 'manufacturer',
+      category: 'Manufacturer',
       label: 'Manufacturer',
       ruleReference: 'Mandatory manufacturer / packer declaration',
-      status: fields.manufacturer ? 'passed' : 'failed',
+      status: (fields.manufacturer ? 'passed' : 'failed') as CheckStatus,
       actual: fields.manufacturer || 'Not detected',
       details: fields.manufacturer
         ? `Manufacturer detected: ${fields.manufacturer}`
         : 'Manufacturer was not detected.',
+      confidence,
+      message: fields.manufacturer
+        ? `Manufacturer detected: ${fields.manufacturer}`
+        : 'Manufacturer was not detected.',
     },
+
     {
       id: 'origin',
+      category: 'Country of Origin',
       label: 'Country of Origin',
       ruleReference: 'Country of origin declaration',
-      status: fields.country_of_origin ? 'passed' : 'warning',
+      status: (fields.country_of_origin ? 'passed' : 'warning') as CheckStatus,
       actual: fields.country_of_origin || 'Not detected',
       details: fields.country_of_origin
+        ? `Country of origin: ${fields.country_of_origin}`
+        : 'Country of origin was not detected.',
+      confidence,
+      message: fields.country_of_origin
         ? `Country of origin: ${fields.country_of_origin}`
         : 'Country of origin was not detected.',
     },
