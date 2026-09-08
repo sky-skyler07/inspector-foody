@@ -225,7 +225,16 @@ function buildViolations(data: any) {
 }
 
 function mapBackendInspection(data: any) {
-  const fields = data.fields || {};
+  const fields = data.fields || {
+    product_name: data.product_name || null,
+    batch_no: data.batch_no || null,
+    manufacturing_date: data.manufacturing_date || null,
+    expiry_date: data.expiry_date || null,
+    mrp: data.mrp || null,
+    quantity: data.quantity || null,
+    manufacturer: data.manufacturer || null,
+    country_of_origin: data.country_of_origin || null,
+  };
 
   const status =
     data.status === 'PASS'
@@ -239,45 +248,32 @@ function mapBackendInspection(data: any) {
 
   return {
     id: inspectionId,
-    productId: data.product_id || 'unknown',
+
+    productId:
+      data.product_id || 'unknown',
 
     product: {
-      id: data.product_id || 'unknown',
-      name: fields.product_name || 'Unknown Product',
-      brand: 'Detected from label',
-      barcode: data.barcode || 'Not detected',
+      id:
+        data.product_id || 'unknown',
 
-      quantity: fields.quantity
-        ? `${fields.quantity} g`
-        : 'Not detected',
+      name:
+        fields.product_name || 'Unknown Product',
 
-      mrp: fields.mrp
-        ? `₹${fields.mrp}`
-        : 'Not detected',
+      brand:
+        'Detected from label',
 
-      manufacturer:
-        fields.manufacturer || 'Not detected',
+      barcode:
+        data.barcode || 'Not detected',
 
-      countryOfOrigin:
-        fields.country_of_origin || 'Not detected',
+      category:
+        'Food Product',
 
-      category: 'Food Product',
-      imageUrl: buildImageUrl(data.image_path),
-
-      complianceScore:
-        typeof data.score === 'number'
-          ? data.score
-          : 0,
-
-      complianceStatus:
-        status as ComplianceStatus,
-
-      lastInspected:
-        data.created_at ||
-        new Date().toISOString(),
+      imageUrl:
+        buildImageUrl(data.image_path),
     },
 
-    imageUrl: buildImageUrl(data.image_path),
+    imageUrl:
+      buildImageUrl(data.image_path),
 
     complianceScore:
       typeof data.score === 'number'
@@ -285,11 +281,19 @@ function mapBackendInspection(data: any) {
         : 0,
 
     complianceStatus:
-      status as ComplianceStatus,
+      status,
 
-    checks: buildChecks(data),
+    checks:
+      buildChecks({
+        ...data,
+        fields,
+      }),
 
-    violations: buildViolations(data),
+    violations:
+      buildViolations({
+        ...data,
+        fields,
+      }),
 
     inspector:
       data.inspector ||
@@ -303,14 +307,6 @@ function mapBackendInspection(data: any) {
       data.review_status ||
       'pending',
   };
-}
-
-export async function getInspection(id: string) {
-  const data = await request<any>(
-    `/api/inspections/${encodeURIComponent(id)}`
-  );
-
-  return mapBackendInspection(data);
 }
 
 export async function getInspections() {
@@ -434,4 +430,21 @@ export async function getDashboardStats() {
     violationDistribution,
     recentInspections,
   };
+}
+export async function getInspection(id: string) {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+  const response = await fetch(
+    `${baseUrl}/api/inspections/${id}`,
+    { cache: "no-store" }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to load inspection: ${response.status}`);
+  }
+
+  const data = await response.json();
+
+  return mapBackendInspection(data);
 }
