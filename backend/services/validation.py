@@ -1127,11 +1127,9 @@ def validate(
 
     if score >= 75:
         status = "PASS"
-
     elif score >= 50:
         status = "WARNING"
-
     else:
         status = "FAIL"
 
-    return status, score, iss
+    return status, score, issues

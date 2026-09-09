@@ -19,13 +19,13 @@ export interface ScanResponse {
     country_of_origin: string | null;
   };
   issues: {
-  field: string;
-  message: string;
-  severity: string;
-}[];
+    field: string;
+    message: string;
+    severity: string;
+  }[];
 }
 
-async function request<T>(
+async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
@@ -49,7 +49,7 @@ export async function uploadInspection(
 
   formData.append('file', file);
 
-  return request<ScanResponse>('/api/scan', {
+  return apiRequest<ScanResponse>('/api/scan', {
     method: 'POST',
     body: formData,
   });
@@ -217,8 +217,7 @@ function buildViolations(data: any) {
       confidence: data.confidence || 0,
       explanation: message,
       reviewed: false,
-      ruleReference:
-        'Food label compliance requirement',
+      ruleReference: 'Food label compliance requirement',
       evidence: [],
     };
   });
@@ -236,7 +235,7 @@ function mapBackendInspection(data: any) {
     country_of_origin: data.country_of_origin || null,
   };
 
-  const status =
+  const status: ComplianceStatus =
     data.status === 'PASS'
       ? 'PASS'
       : data.status === 'WARNING'
@@ -310,7 +309,8 @@ function mapBackendInspection(data: any) {
 }
 
 export async function getInspections() {
-  const data = await request<any[]>('/api/inspections');
+  const data = await apiRequest<any[]>('/api/inspections');
+
   return data.map(mapBackendInspection);
 }
 
@@ -374,6 +374,7 @@ export async function getDashboardStats() {
     }
 
     groupedByDate[key].total += 1;
+
     groupedByDate[key].score +=
       inspection.complianceScore;
   });
@@ -431,17 +432,21 @@ export async function getDashboardStats() {
     recentInspections,
   };
 }
+
 export async function getInspection(id: string) {
   const baseUrl =
-    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    process.env.NEXT_PUBLIC_API_URL ||
+    'http://localhost:8000';
 
   const response = await fetch(
     `${baseUrl}/api/inspections/${id}`,
-    { cache: "no-store" }
+    { cache: 'no-store' }
   );
 
   if (!response.ok) {
-    throw new Error(`Failed to load inspection: ${response.status}`);
+    throw new Error(
+      `Failed to load inspection: ${response.status}`
+    );
   }
 
   const data = await response.json();

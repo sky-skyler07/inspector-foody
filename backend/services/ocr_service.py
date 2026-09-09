@@ -89,14 +89,4 @@ def extract_text(image_path: str) -> tuple[str, int]:
 
     except Exception as e:
         raise RuntimeError(f"RapidOCR failed: {type(e).__name__}: {e}") from e
-images=["IMG-20260907-WA0008","IMG-20260907-WA0018","IMG-20260907-WA0019","IMG-20260907-WA0021","IMG-20260907-WA0022","IMG-20260907-WA0023",
-"IMG-20260907-WA0024","IMG-20260907-WA0026"]
-base_dir = Path(r"C:\Users\Aman\Desktop\OCR_testing")
-
-for idx, img_name in enumerate(images, start=1):
-    img_path = base_dir / f"{img_name}.jpg"
-    try:
-        text, conf = extract_text(str(img_path))
-        print(f"{idx}: [Confidence: {conf}%]\n{text}\n{'-'*30}")
-    except Exception as err:
-        print(f"{idx}: Error processing {img_name}: {err}")
+print(extract_text("C:/Users/ACER/Downloads/label01.png"))
